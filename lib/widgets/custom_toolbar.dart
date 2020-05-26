@@ -12,7 +12,6 @@ class CustomToolbar extends StatelessWidget {
     return Container(
         height: 60,
         width: double.infinity,
-        margin: EdgeInsets.only(top: 25),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
@@ -34,6 +33,7 @@ class CustomToolbar extends StatelessWidget {
                   child: Container(
                 child: Text(
                   header,
+                  maxLines: 1,
                   style: TextStyle(
                       fontSize: 18,
                       color: MyColor.textBlueColor,

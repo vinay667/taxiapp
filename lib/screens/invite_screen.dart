@@ -11,8 +11,9 @@ class InviteScreen extends StatefulWidget {
 class InviteScreenState extends State<InviteScreen> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Container(
+    return Scaffold(
+        body: SafeArea(
+      child: Container(
           color: Colors.white,
           child: Column(
             children: <Widget>[
@@ -138,6 +139,6 @@ class InviteScreenState extends State<InviteScreen> {
               )
             ],
           )),
-    );
+    ));
   }
 }

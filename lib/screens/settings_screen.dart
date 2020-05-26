@@ -13,8 +13,9 @@ class SettingsScreen extends StatefulWidget {
 class SettingsState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Container(
+    return Scaffold(
+        body: SafeArea(
+      child: Container(
         color: Colors.white,
         child: Column(
           children: <Widget>[
@@ -249,6 +250,6 @@ class SettingsState extends State<SettingsScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

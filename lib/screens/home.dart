@@ -350,6 +350,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 child: Container(
                               child: Text(
                                 'Hello Alax',
+                                maxLines: 1,
                                 style: TextStyle(
                                     fontSize: 18,
                                     color: MyColor.textBlueColor,
