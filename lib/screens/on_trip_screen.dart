@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:maps_curved_line/maps_curved_line.dart';
+import 'package:taxiapp/widgets/custom_marker_widget.dart';
 
 import '../colors/colors.dart';
 import '../dialog/driver_rating_dialog.dart';
@@ -15,34 +19,45 @@ class OnTripScreen extends StatefulWidget {
 
 class OnTripScreenState extends State<OnTripScreen> {
   int valueHolder = 10;
+  final Set<Polyline> _polylines = Set();
+  final LatLng _point1 = LatLng(45.5586, -122.7609);
+  final LatLng _point2 = LatLng(45.681910, -122.580340);
+  List<Marker> markersWidget = [];
   String _mapStyle;
   BitmapDescriptor pinLocationIcon;
   GoogleMapController mapController;
   static String circleIdMain = 'circleID1';
   static String circleIdMain2 = 'circleID2';
   static String circleIdMain3 = 'circleID3';
+  static String circleIdMain4 = 'circleID4';
   Set<Marker> markers = Set();
   Set<Circle> circles = Set.from([
+
+
     Circle(
-        circleId: CircleId(circleIdMain3),
-        center: LatLng(45.5586, -122.7609),
-        radius: 1000,
-        fillColor: MyColor.themeColor.withOpacity(0.3),
-        strokeColor: MyColor.themeColor,
+        circleId: CircleId(circleIdMain4),
+        center: LatLng(45.681910, -122.580340),
+        radius: 400,
+        fillColor: MyColor.textBlueColor,
+        strokeColor: MyColor.textBlueColor,
         strokeWidth: 1),
+
+
+
     Circle(
         circleId: CircleId(circleIdMain),
         center: LatLng(45.5586, -122.7609),
-        radius: 4000,
-        fillColor: MyColor.themeColor.withOpacity(0.2),
-        strokeColor: MyColor.themeColor,
+        radius: 3500,
+        fillColor: MyColor.greyCircle,
+        strokeColor: MyColor.greyCircle,
         strokeWidth: 1),
+
     Circle(
         circleId: CircleId(circleIdMain2),
         center: LatLng(45.5586, -122.7609),
-        radius: 200,
-        fillColor: MyColor.themeColor,
-        strokeColor: MyColor.themeColor,
+        radius: 800,
+        fillColor: MyColor.greyDarkCircle,
+        strokeColor: MyColor.greyDarkCircle,
         strokeWidth: 1),
   ]);
 
@@ -59,11 +74,20 @@ class OnTripScreenState extends State<OnTripScreen> {
   @override
   Widget build(BuildContext context) {
     BitmapDescriptor.fromAssetImage(
-            ImageConfiguration(devicePixelRatio: 2.5), 'images/car_icon.png')
+            ImageConfiguration(devicePixelRatio: 2.5), 'images/car_icon_map.png')
         .then((onValue) {
       pinLocationIcon = onValue;
     });
-
+    _polylines.add(Polyline(
+      polylineId: PolylineId("line 1"),
+      visible: true,
+      width: 2,
+      //latlng is List<LatLng>
+      patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+      points: MapsCurvedLines.getPointsOnCurve(_point1, _point2),
+      // Invoke lib to get curved line points
+      color: MyColor.themeColor,
+    ));
     return MaterialApp(
       home: Column(
         children: <Widget>[
@@ -73,13 +97,15 @@ class OnTripScreenState extends State<OnTripScreen> {
               Container(
                 height: double.infinity,
                 child: GoogleMap(
+                  zoomControlsEnabled: false,
                   onMapCreated: _onMapCreated,
                   initialCameraPosition: CameraPosition(
                     target: _center,
-                    zoom: 11.0,
+                    zoom: 10.0,
                   ),
                   markers: markers,
                   circles: circles,
+                  polylines: _polylines,
                 ),
               ),
               Container(
@@ -115,7 +141,7 @@ class OnTripScreenState extends State<OnTripScreen> {
                                     topRight: Radius.circular(30),
                                     topLeft: Radius.circular(30))),
                             child: Container(
-                                height: 386,
+                                height: 381,
                                 width: double.infinity,
                                 child: Column(
                                   children: <Widget>[
@@ -565,11 +591,13 @@ class OnTripScreenState extends State<OnTripScreen> {
                                               ),
                                               color: Colors.white,
                                             ),
-                                            height: 50,
+                                            height: 45,
                                           ),
                                         ),
                                       ),
                                     ),
+
+
                                   ],
                                 )),
                           ),
@@ -605,14 +633,6 @@ class OnTripScreenState extends State<OnTripScreen> {
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
     mapController.setMapStyle(_mapStyle);
-    setState(() {
-      markers.addAll([
-        Marker(
-            markerId: MarkerId('value'),
-            position: LatLng(45.521563, -122.677433),
-            icon: pinLocationIcon),
-      ]);
-    });
   }
 
   @override
@@ -622,5 +642,114 @@ class OnTripScreenState extends State<OnTripScreen> {
     rootBundle.loadString('assets/map_style.txt').then((string) {
       _mapStyle = string;
     });
+
+    MarkerGenerator(_getDestinationWidget(), (bitmaps) {
+      setState(() {
+        markersWidget = mapBitmapsToMarkers(bitmaps);
+      });
+    }).generate(context);
+
+  }
+  List<Marker> mapBitmapsToMarkers(List<Uint8List> bitmaps) {
+    List<Marker> markersList = [];
+    bitmaps.asMap().forEach((i, bmp) {
+      markers.add(Marker(
+          markerId: MarkerId('destination'),
+          position: _point2,
+          icon: BitmapDescriptor.fromBytes(bmp)));
+    });
+
+    markers.addAll([
+      Marker(
+          markerId: MarkerId('value'),
+          position: _point1,
+          icon: pinLocationIcon),
+    ]);
+    return markersList;
+  }
+  Widget _getDestinationWidget() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      child:  Container(
+          padding: EdgeInsets.symmetric(
+              horizontal: 3.0, vertical: 1.5),
+          width: 94,
+          height: 51,
+          child: Stack(
+            children: <Widget>[
+              Image.asset(
+                'images/home_shape_map.png',
+              ),
+              Center(
+                  child: Row(
+                    children: <Widget>[
+                      SizedBox(width: 14),
+                      Container(
+                          width: 25,
+                          height: 25,
+                          child: Stack(
+                            children: <Widget>[
+                              Padding(
+                                  padding:
+                                  EdgeInsets.only(
+                                      bottom: 5),
+                                  child: Image.asset(
+                                      'images/map_oval.png')),
+                              Column(
+                                children: <Widget>[
+                                  Padding(
+                                    padding: EdgeInsets
+                                        .only(
+                                        top: 3,
+                                        left: 3),
+                                    child: Text('15',
+                                        style: TextStyle(
+                                            fontSize:
+                                            9,
+                                            color: MyColor
+                                                .blueMap,
+                                            fontFamily:
+                                            'GilroySemibold')),
+                                  ),
+                                  Container(
+                                    transform: Matrix4
+                                        .translationValues(
+                                        0.0,
+                                        -3.0,
+                                        0.0),
+                                    padding: EdgeInsets
+                                        .only(
+                                        left: 3),
+                                    child: Text(
+                                        'Mins',
+                                        style: TextStyle(
+                                            fontSize:
+                                            6,
+                                            color: MyColor
+                                                .greyMap,
+                                            fontFamily:
+                                            'GilroySemibold')),
+                                  )
+                                ],
+                              )
+                            ],
+                          )),
+                      Padding(
+                        padding: EdgeInsets.only(
+                            bottom: 7),
+                        child: Text(
+                          'Home',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white,
+                              fontFamily:
+                              'GilroySemibold'),
+                        ),
+                      )
+                    ],
+                  ))
+            ],
+          )),
+    );
   }
 }

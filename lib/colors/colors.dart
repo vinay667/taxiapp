@@ -34,10 +34,12 @@ class MyColor {
   static const greyDivider = Color(0xFFf5f5f5);
   static const tripStar = Color(0xFFFFC201);
   static const tripCarBack = Color(0xFFF7F6F6);
+  static const greyDarkCircle = Color(0xFF9AA6B5);
   static const tripCirclePink = Color(0xFFFF1675);
   static const tripCircleBlack = Color(0xFF3E3E3E);
   static const greyDivider22 = Color(0xFFa6a6a6);
   static const blueText = Color(0xFF094bc3);
+  static const greyCircle = Color(0xFFDcE0E5);
   static const green = Color(0xFF1fdf7e);
   static const greyContainer = Color(0xFFf4f5f6);
   static const tripDateColor = Color.fromRGBO(0, 0, 0, .4);
@@ -51,6 +53,8 @@ class MyColor {
   static const dialog_subTitle = Color.fromRGBO(0, 0, 0, 0.8);
   static const greyTextColorCard = Color.fromRGBO( 247, 246, 246,1.0);
   static const blackTransparent = Color.fromRGBO( 0, 0, 0,0.0);
+  static const blueMap = Color.fromRGBO(19,20,87,1);
+  static const greyMap = Color.fromRGBO(34,34,34,0.7);
 
 
 

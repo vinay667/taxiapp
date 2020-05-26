@@ -1,15 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
-
+import 'package:maps_curved_line/maps_curved_line.dart';
+import 'package:taxiapp/dialog/driver_rating_dialog.dart';
+import 'package:taxiapp/widgets/custom_marker_widget.dart';
 import '../colors/colors.dart';
-import 'confirmation_screen.dart';
-import '../dialog/driver_rating_dialog.dart';
 import 'on_trip_screen.dart';
-
 class SelectCabScreen extends StatefulWidget {
   @override
   SelectCabScreenState createState() => SelectCabScreenState();
@@ -17,6 +18,10 @@ class SelectCabScreen extends StatefulWidget {
 
 class SelectCabScreenState extends State<SelectCabScreen> {
   String _mapStyle;
+  final Set<Polyline> _polylines = Set();
+  final LatLng _point1 = LatLng(45.5586, -122.7609);
+  final LatLng _point2 = LatLng(45.681910, -122.580340);
+  List<Marker> markersWidget = [];
   BitmapDescriptor pinLocationIcon;
   GoogleMapController mapController;
   static String circleIdMain = 'circleID1';
@@ -24,6 +29,13 @@ class SelectCabScreenState extends State<SelectCabScreen> {
   static String circleIdMain3 = 'circleI3';
   Set<Marker> markers = Set();
   Set<Circle> circles = Set.from([
+    Circle(
+        circleId: CircleId(circleIdMain3),
+        center: LatLng(45.681910, -122.580340),
+        radius: 400,
+        fillColor: MyColor.textBlueColor,
+        strokeColor: MyColor.textBlueColor,
+        strokeWidth: 1),
     Circle(
         circleId: CircleId(circleIdMain3),
         center: LatLng(45.5586, -122.7609),
@@ -56,7 +68,6 @@ class SelectCabScreenState extends State<SelectCabScreen> {
   ];
 
   final LatLng _center = const LatLng(45.521563, -122.677433);
-
   @override
   Widget build(BuildContext context) {
     BitmapDescriptor.fromAssetImage(
@@ -64,6 +75,19 @@ class SelectCabScreenState extends State<SelectCabScreen> {
         .then((onValue) {
       pinLocationIcon = onValue;
     });
+
+    _polylines.add(Polyline(
+      polylineId: PolylineId("line 1"),
+      visible: true,
+      width: 2,
+      //latlng is List<LatLng>
+      patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+      points: MapsCurvedLines.getPointsOnCurve(_point1, _point2),
+      // Invoke lib to get curved line points
+      color: MyColor.themeColor,
+    ));
+
+
 
     return MaterialApp(
       home: Column(
@@ -74,13 +98,15 @@ class SelectCabScreenState extends State<SelectCabScreen> {
               Container(
                 height: double.infinity,
                 child: GoogleMap(
+                  zoomControlsEnabled: false,
                   onMapCreated: _onMapCreated,
                   initialCameraPosition: CameraPosition(
                     target: _center,
-                    zoom: 11.0,
+                    zoom: 10.0,
                   ),
                   markers: markers,
                   circles: circles,
+                  polylines: _polylines,
                 ),
               ),
               Container(
@@ -197,6 +223,7 @@ class SelectCabScreenState extends State<SelectCabScreen> {
                                                 ),
                                               );
                                             })),
+
                                     Padding(
                                       padding: EdgeInsets.only(
                                           top: 15, left: 10, right: 10),
@@ -387,14 +414,6 @@ class SelectCabScreenState extends State<SelectCabScreen> {
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
     mapController.setMapStyle(_mapStyle);
-    setState(() {
-      markers.addAll([
-        Marker(
-            markerId: MarkerId('value'),
-            position: LatLng(45.521563, -122.677433),
-            icon: pinLocationIcon),
-      ]);
-    });
   }
 
   @override
@@ -404,5 +423,109 @@ class SelectCabScreenState extends State<SelectCabScreen> {
     rootBundle.loadString('assets/map_style.txt').then((string) {
       _mapStyle = string;
     });
+    MarkerGenerator(_getMarkerWidget(), (bitmaps) {
+      setState(() {
+        markersWidget = mapBitmapsToMarkers(bitmaps);
+      });
+    }).generate(context);
+
+    MarkerGenerator(_getDestinationWidget(), (bitmaps) {
+      setState(() {
+        markersWidget = mapBitmapsToMarker(bitmaps);
+      });
+    }).generate(context);
+
+
   }
+  List<Marker> mapBitmapsToMarkers(List<Uint8List> bitmaps) {
+    List<Marker> markersList = [];
+    bitmaps.asMap().forEach((i, bmp) {
+      markers.add(Marker(
+          markerId: MarkerId('source'),
+          position: _point1,
+          icon: BitmapDescriptor.fromBytes(bmp)));
+    });
+
+    markers.addAll([
+      Marker(
+          markerId: MarkerId('value'),
+          position: LatLng(45.521563, -122.677433),
+          icon: pinLocationIcon),
+    ]);
+    return markersList;
+  }
+
+
+  List<Marker> mapBitmapsToMarker(List<Uint8List> bitmaps) {
+    List<Marker> markersList = [];
+    bitmaps.asMap().forEach((i, bmp) {
+      markers.add(Marker(
+          markerId: MarkerId('destination'),
+          position: _point2,
+          icon: BitmapDescriptor.fromBytes(bmp)));
+    });
+
+    markers.addAll([
+      Marker(
+          markerId: MarkerId('value'),
+          position: LatLng(45.521563, -122.677433),
+          icon: pinLocationIcon),
+    ]);
+    return markersList;
+  }
+
+
+
+  Widget _getMarkerWidget() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 3, vertical:1.5),
+          width: 144.3,
+          height: 51.7,
+          child: Stack(
+            children: <Widget>[
+              Image.asset('images/map_shape.png'
+              ),
+              Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 7),
+                    child: Text('Logix City Center',style: TextStyle(fontSize: 10,color: Colors.white,fontFamily: 'GilroySemibold'),),
+                  )
+              )
+            ],
+          )
+      ),
+    );
+  }
+
+  Widget _getDestinationWidget() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 3.0, vertical: 1.5),
+          width: 94,
+          height: 51,
+          child: Stack(
+            children: <Widget>[
+              Image.asset('images/home_shape_map.png',),
+              Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 7),
+                    child: Text('Home',style: TextStyle(fontSize: 11,color: Colors.white,fontFamily: 'GilroySemibold'),),
+                  )
+              )
+            ],
+          )
+      ),
+    );
+  }
+
+
+
+
+
+
+
+
 }

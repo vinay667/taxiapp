@@ -85,6 +85,10 @@ flutter:
     - images/mail.png
     - images/button_back.png
     - images/custom_marker_back.png
+    - images/map_shape.png
+    - images/home_shape_map.png
+    - images/map_oval.png
+    - images/car_icon_map.png
   fonts:
     - family: GilroyBold
       fonts:

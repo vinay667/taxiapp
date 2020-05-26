@@ -6,7 +6,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:maps_curved_line/maps_curved_line.dart';
 import 'package:taxiapp/widgets/custom_marker.dart';
-
 import '../colors/colors.dart';
 import '../dialog/driver_rating_dialog.dart';
 import '../dialog/on_its_way_dialog.dart';

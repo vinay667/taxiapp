@@ -6,6 +6,7 @@ import 'package:taxiapp/colors/colors.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:taxiapp/screens/confirmation_screen.dart';
 import 'package:taxiapp/screens/destination_screen.dart';
+import 'package:taxiapp/screens/on_trip_screen.dart';
 import 'package:taxiapp/screens/payment_screen.dart';
 import 'package:taxiapp/screens/profile_screen.dart';
 import 'package:taxiapp/screens/select_cab_screen.dart';
@@ -200,9 +201,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       context,
                       CupertinoPageRoute(
                           builder: (context) => SelectCabScreen()));
-
-                  // Update the state of the app.
-                  // ...
                 },
               ),
               ListTile(
