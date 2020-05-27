@@ -233,9 +233,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       context,
                       CupertinoPageRoute(
                           builder: (context) => PaymentScreen()));
-
-                  // Update the state of the app.
-                  // ...
                 },
               ),
               ListTile(

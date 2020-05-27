@@ -78,6 +78,11 @@ class OnTripScreenState extends State<OnTripScreen> {
         .then((onValue) {
       pinLocationIcon = onValue;
     });
+    MarkerGenerator(_getDestinationWidget(), (bitmaps) {
+      setState(() {
+        markersWidget = mapBitmapsToMarkers(bitmaps);
+      });
+    }).generate(context);
     _polylines.add(Polyline(
       polylineId: PolylineId("line 1"),
       visible: true,
@@ -642,12 +647,6 @@ class OnTripScreenState extends State<OnTripScreen> {
     rootBundle.loadString('assets/map_style.txt').then((string) {
       _mapStyle = string;
     });
-
-    MarkerGenerator(_getDestinationWidget(), (bitmaps) {
-      setState(() {
-        markersWidget = mapBitmapsToMarkers(bitmaps);
-      });
-    }).generate(context);
 
   }
   List<Marker> mapBitmapsToMarkers(List<Uint8List> bitmaps) {

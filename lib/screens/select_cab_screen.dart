@@ -76,6 +76,18 @@ class SelectCabScreenState extends State<SelectCabScreen> {
       pinLocationIcon = onValue;
     });
 
+    MarkerGenerator(_getMarkerWidget(), (bitmaps) {
+      setState(() {
+        markersWidget = mapBitmapsToMarkers(bitmaps);
+      });
+    }).generate(context);
+
+    MarkerGenerator(_getDestinationWidget(), (bitmaps) {
+      setState(() {
+        markersWidget = mapBitmapsToMarker(bitmaps);
+      });
+    }).generate(context);
+
     _polylines.add(Polyline(
       polylineId: PolylineId("line 1"),
       visible: true,
@@ -423,17 +435,7 @@ class SelectCabScreenState extends State<SelectCabScreen> {
     rootBundle.loadString('assets/map_style.txt').then((string) {
       _mapStyle = string;
     });
-    MarkerGenerator(_getMarkerWidget(), (bitmaps) {
-      setState(() {
-        markersWidget = mapBitmapsToMarkers(bitmaps);
-      });
-    }).generate(context);
 
-    MarkerGenerator(_getDestinationWidget(), (bitmaps) {
-      setState(() {
-        markersWidget = mapBitmapsToMarker(bitmaps);
-      });
-    }).generate(context);
 
 
   }
