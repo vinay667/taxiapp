@@ -19,15 +19,21 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^0.1.2
   google_maps_flutter: ^0.5.27
   location: 3.0.0
   flutter_dash: ^0.0.1
   dotted_border: ^1.0.5
   maps_curved_line: ^0.1.1
+  geolocator: ^5.3.1
+  scoped_model: ^1.0.1
+  http: ^0.12.0+4
+  flutter_google_places: ^0.2.5
+  geocoder: ^0.2.1
+  shared_preferences: ^0.5.7+3
+  progress_dialog: ^1.2.3
+  toast: ^0.1.5
+  flushbar: ^1.9.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -89,6 +95,7 @@ flutter:
     - images/home_shape_map.png
     - images/map_oval.png
     - images/car_icon_map.png
+    - images/marker.png
   fonts:
     - family: GilroyBold
       fonts:

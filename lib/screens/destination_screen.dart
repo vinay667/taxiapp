@@ -1,23 +1,33 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dash/flutter_dash.dart';
+import 'package:http/http.dart' as http;
 
 import '../colors/colors.dart';
 
 class DestinationScreen extends StatefulWidget {
+  String token;
+  DestinationScreen(this.token);
   @override
-  _DestinationScreenState createState() => _DestinationScreenState();
+  _DestinationScreenState createState() => _DestinationScreenState(token);
 }
 
 class _DestinationScreenState extends State<DestinationScreen> {
+  String token;
+  _DestinationScreenState(this.token);
   var textController = new TextEditingController();
+  String addressHome='Add Home';
+  String addressWork='Add Work';
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     textController.text = "Current Location";
+    checkLocation();
   }
 
   @override
@@ -143,7 +153,9 @@ class _DestinationScreenState extends State<DestinationScreen> {
                           width: 56,
                         ),
                         Text(
-                          'Add Home',
+                          addressHome,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               fontSize: 13.3,
                               fontFamily: 'GilroySemibold',
@@ -162,7 +174,7 @@ class _DestinationScreenState extends State<DestinationScreen> {
                           width: 56,
                         ),
                         Text(
-                          'Add Work',
+                          addressWork,
                           style: TextStyle(
                               fontSize: 13.3,
                               fontFamily: 'GilroySemibold',
@@ -252,4 +264,88 @@ class _DestinationScreenState extends State<DestinationScreen> {
       ),
     );
   }
+
+  Future<Map<String, dynamic>> checkLocation() async {
+    showAlertDialog(context,'Fetching Addresses...');
+    String message = '';
+    try {
+      http.Response response;
+      response = await http.get(
+          'http://projects.thesparxitsolutions.com/SIS835/api/user/location',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Authorization': 'Bearer ' + token
+          });
+      Map<String, dynamic> fetchTokenResponse = json.decode(response.body);
+      print(fetchTokenResponse);
+      Navigator.pop(context);
+      // Check for routes errors
+      if (fetchTokenResponse['status'] == 'error') {
+        message = fetchTokenResponse['message'];
+      } else {
+        message = fetchTokenResponse['message'];
+        List<dynamic> homeList=fetchTokenResponse['home'];
+        List<dynamic> workList=fetchTokenResponse['work'];
+        if(homeList.length==0)
+        {
+          print('Home array is null');
+        }
+        else
+        {
+          print('Home array has data');
+          print(homeList.toString());
+
+          setState(() {
+
+            addressHome=homeList[0]['address'];
+
+          });
+
+
+        }
+
+        if(workList.length==0)
+        {
+          print('Work array is null');
+        }
+        else
+        {
+          print('Work arra is nit null');
+          setState(() {
+            addressWork=workList[0]['address'];
+          });
+
+
+        }
+        print(message);
+
+      }
+    } catch (errorMessage) {
+      message = errorMessage.toString();
+    }
+  }
+  showAlertDialog(BuildContext context,String dialogText) {
+    AlertDialog alert = AlertDialog(
+      content: new Row(
+        children: [
+          CircularProgressIndicator(backgroundColor: MyColor.gradientStart,),
+          Container(margin: EdgeInsets.only(left: 15), child: Text(dialogText)),
+        ],
+      ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+
+
+
+
 }

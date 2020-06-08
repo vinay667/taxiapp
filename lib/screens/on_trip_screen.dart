@@ -68,9 +68,7 @@ class OnTripScreenState extends State<OnTripScreen> {
     'images/car_1.png',
     'images/car_1.png'
   ];
-
   final LatLng _center = const LatLng(45.521563, -122.677433);
-
   @override
   Widget build(BuildContext context) {
     BitmapDescriptor.fromAssetImage(

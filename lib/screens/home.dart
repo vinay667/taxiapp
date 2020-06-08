@@ -1,73 +1,79 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoder/geocoder.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_webservice/places.dart';
+import 'package:progress_dialog/progress_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:taxiapp/colors/colors.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:taxiapp/screens/confirmation_screen.dart';
+import 'package:flutter_google_places/flutter_google_places.dart';
 import 'package:taxiapp/screens/destination_screen.dart';
-import 'package:taxiapp/screens/on_trip_screen.dart';
-import 'package:taxiapp/screens/payment_screen.dart';
 import 'package:taxiapp/screens/profile_screen.dart';
 import 'package:taxiapp/screens/select_cab_screen.dart';
 import 'package:taxiapp/screens/settings_screen.dart';
 import 'package:taxiapp/screens/your_trip.dart';
-
+import 'package:toast/toast.dart';
 import 'help_screen.dart';
 import 'invite_screen.dart';
+import 'location_screen.dart';
+
+const kGoogleApiKey = "AIzaSyB_TCC5pNO5HdmwqdCY5Gfeu27549LP0mc";
+GoogleMapsPlaces _places = new GoogleMapsPlaces(apiKey: kGoogleApiKey);
 
 class MyHomePage extends StatefulWidget {
+  String token;
+  MyHomePage(this.token);
+
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _MyHomePageState createState() => _MyHomePageState(token);
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  String token;
+  String locType='';
+  Completer<GoogleMapController> controller1;
+
+
+  _MyHomePageState(this.token);
+String homeLocatioName='My Home';
+String workLocatioName='My Work';
   String _mapStyle;
-  BitmapDescriptor pinLocationIcon;
+  ProgressDialog progressDialog;
+  Mode _mode = Mode.fullscreen;
+  final homeScaffoldKey = new GlobalKey<ScaffoldState>();
+
+  static LatLng currentLocation;
+  BitmapDescriptor pinLocationIcon,currentLocationIcon;
   GoogleMapController mapController;
   static String circleIdMain = 'circleID1';
   static String circleIdMain2 = 'circleID2';
   static String circleIdMain3 = 'circleID3';
   Set<Marker> markers = Set();
-  Set<Circle> circles = Set.from([
-    Circle(
-        circleId: CircleId(circleIdMain3),
-        center: LatLng(45.521563, -122.677433),
-        radius: 1000,
-        fillColor: MyColor.themeColor.withOpacity(0.3),
-        strokeColor: MyColor.themeColor,
-        strokeWidth: 1),
-    Circle(
-        circleId: CircleId(circleIdMain),
-        center: LatLng(45.521563, -122.677433),
-        radius: 4000,
-        fillColor: MyColor.themeColor.withOpacity(0.2),
-        strokeColor: MyColor.themeColor,
-        strokeWidth: 1),
-    Circle(
-        circleId: CircleId(circleIdMain2),
-        center: LatLng(45.521563, -122.677433),
-        radius: 200,
-        fillColor: MyColor.themeColor,
-        strokeColor: MyColor.themeColor,
-        strokeWidth: 1),
-  ]);
-  final LatLng _center = const LatLng(45.521563, -122.677433);
-
+  Set<Circle> circles = Set();
   @override
   Widget build(BuildContext context) {
+    getCurrentLocation();
     BitmapDescriptor.fromAssetImage(
             ImageConfiguration(devicePixelRatio: 2.5), 'images/car_icon.png')
         .then((onValue) {
       pinLocationIcon = onValue;
     });
-
+    BitmapDescriptor.fromAssetImage(
+        ImageConfiguration(devicePixelRatio: 2.5), 'images/marker.png')
+        .then((onValue) {
+      currentLocationIcon = onValue;
+    });
     return Scaffold(
       drawer: Container(
         width: 210.3,
         child: Drawer(
           child: ListView(
-            // Important: Remove any padding from the ListView.
             padding: EdgeInsets.zero,
             children: <Widget>[
               GestureDetector(
@@ -200,7 +206,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   Navigator.push(
                       context,
                       CupertinoPageRoute(
-                          builder: (context) => SelectCabScreen()));
+                          builder: (context) => SelectCabScreen(token)));
                 },
               ),
               ListTile(
@@ -232,7 +238,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   Navigator.push(
                       context,
                       CupertinoPageRoute(
-                          builder: (context) => PaymentScreen()));
+                          builder: (context) => LocationScreen()));
                 },
               ),
               ListTile(
@@ -373,12 +379,15 @@ class _MyHomePageState extends State<MyHomePage> {
                   Expanded(
                       child: Stack(
                     children: <Widget>[
+                        currentLocation==null?Container(
+                          width:double.infinity,
+                          child: Center(child: Text('Loading map...',style: TextStyle(decoration: TextDecoration.none,color: MyColor.gradientEnd),),),):
                       Container(
                         height: double.infinity,
                         child: GoogleMap(
                           onMapCreated: _onMapCreated,
                           initialCameraPosition: CameraPosition(
-                            target: _center,
+                            target: currentLocation,
                             zoom: 11.0,
                           ),
                           markers: markers,
@@ -421,11 +430,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 BorderRadius.circular(20)),
                                         child: InkWell(
                                           onTap: () {
+
                                             Navigator.push(
                                                 context,
                                                 CupertinoPageRoute(
                                                     builder: (context) =>
-                                                        DestinationScreen()));
+                                                        DestinationScreen(token)));
                                           },
                                           child: Container(
                                             width: 130.3,
@@ -506,12 +516,16 @@ class _MyHomePageState extends State<MyHomePage> {
                                             borderRadius:
                                                 BorderRadius.circular(20)),
                                         child: InkWell(
-                                            onTap: () {
-                                              Navigator.push(
-                                                  context,
-                                                  CupertinoPageRoute(
-                                                      builder: (context) =>
-                                                          ConfirmationScreen()));
+                                            onTap: (){
+                                              if(homeLocatioName!='My Home')
+                                                {
+                                                  Navigator.push(context,CupertinoPageRoute(builder:(context)=>SelectCabScreen(token)));
+                                                }
+                                              else
+                                                {
+                                                  openPlacePicker('home');
+                                                }
+
                                             },
                                             child: Container(
                                               width: 130.3,
@@ -551,7 +565,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                       padding: EdgeInsets.only(
                                                           top: 15),
                                                       child: Text(
-                                                        ' My Home',
+                                                        homeLocatioName,
                                                         style: TextStyle(
                                                             fontSize: 15,
                                                             color: MyColor
@@ -578,69 +592,83 @@ class _MyHomePageState extends State<MyHomePage> {
                                     ),
                                     Padding(
                                       padding: EdgeInsets.only(left: 5),
-                                      child: Card(
-                                        elevation: 10,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20)),
-                                        child: Container(
-                                          width: 130.3,
-                                          height: 124.3,
-                                          child: Column(
-                                            children: <Widget>[
-                                              Padding(
-                                                padding:
-                                                    EdgeInsets.only(top: 20),
-                                              ),
-                                              Container(
-                                                  width: 47,
-                                                  height: 47,
-                                                  decoration: new BoxDecoration(
-                                                    color: Colors.white,
-                                                    shape: BoxShape.circle,
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                          color: Colors.black26,
-                                                          blurRadius: 8.0,
-                                                          offset:
-                                                              Offset(1.0, 1.0),
-                                                          spreadRadius: 0.0)
-                                                    ],
-                                                  ),
-                                                  child: Center(
-                                                      child: Image.asset(
-                                                    'images/office_pink.png',
-                                                    height: 16.0,
-                                                    color: MyColor.themeColor,
-                                                    width: 18.3,
-                                                  ))),
-                                              Padding(
+                                      child: InkWell(
+                                        onTap: (){
+                                          if(workLocatioName!='My Work')
+                                            {
+                                              Navigator.push(context, CupertinoPageRoute(builder: (context)=>SelectCabScreen(token)));
+                                            }
+                                          else
+                                            {
+                                              openPlacePicker('work');
+                                            }
+                                        },
+                                        child: Card(
+                                          elevation: 10,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                              BorderRadius.circular(20)),
+                                          child: Container(
+                                            width: 130.3,
+                                            height: 124.3,
+                                            child: Column(
+                                              children: <Widget>[
+                                                Padding(
                                                   padding:
-                                                      EdgeInsets.only(top: 15),
-                                                  child: Text(
-                                                    'My Office',
-                                                    style: TextStyle(
-                                                        fontSize: 15,
-                                                        color: MyColor
-                                                            .greyTextColor,
-                                                        fontFamily:
-                                                            'GilroySemibold'),
-                                                  )),
-                                              Padding(
-                                                  padding:
-                                                      EdgeInsets.only(top: 5),
-                                                  child: Text(
-                                                    '50 minutes',
-                                                    style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: MyColor.textSoft,
-                                                        fontFamily:
-                                                            'GilroySemibold'),
-                                                  ))
-                                            ],
+                                                  EdgeInsets.only(top: 20),
+                                                ),
+                                                Container(
+                                                    width: 47,
+                                                    height: 47,
+                                                    decoration: new BoxDecoration(
+                                                      color: Colors.white,
+                                                      shape: BoxShape.circle,
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                            color: Colors.black26,
+                                                            blurRadius: 8.0,
+                                                            offset:
+                                                            Offset(1.0, 1.0),
+                                                            spreadRadius: 0.0)
+                                                      ],
+                                                    ),
+                                                    child: Center(
+                                                        child: Image.asset(
+                                                          'images/office_pink.png',
+                                                          height: 16.0,
+                                                          color: MyColor.themeColor,
+                                                          width: 18.3,
+                                                        ))),
+                                                Padding(
+                                                    padding:
+                                                    EdgeInsets.only(top: 15),
+                                                    child: Text(
+                                                      workLocatioName,
+                                                      style: TextStyle(
+                                                          fontSize: 15,
+                                                          color: MyColor
+                                                              .greyTextColor,
+                                                          fontFamily:
+                                                          'GilroySemibold'),
+                                                    )),
+                                                Padding(
+                                                    padding:
+                                                    EdgeInsets.only(top: 5),
+                                                    child: Text(
+                                                      '50 minutes',
+                                                      style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: MyColor.textSoft,
+                                                          fontFamily:
+                                                          'GilroySemibold'),
+                                                    ))
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ),
+
+
+                                      )
                                     )
                                   ],
                                 )),
@@ -720,6 +748,14 @@ class _MyHomePageState extends State<MyHomePage> {
     mapController.setMapStyle(_mapStyle);
 
     setState(() {
+      controller1.complete(controller);
+
+
+    });
+
+
+
+/*    setState(() {
       markers.addAll([
         Marker(
             markerId: MarkerId('value'),
@@ -730,19 +766,284 @@ class _MyHomePageState extends State<MyHomePage> {
             position: LatLng(45.5101, -122.7158),
             icon: pinLocationIcon),
         Marker(
-            markerId: MarkerId('value2'),
+            markerId: MarkerId('value3'),
             position: LatLng(45.5191, -122.5791),
             icon: pinLocationIcon),
       ]);
-    });
+    });*/
   }
 
   @override
-  void initState() {
+  Future<void> initState() {
     // TODO: implement initState
     super.initState();
+    getCurrentLocation();
+
+    if (token == 'token') {
+      fetchAccessToken();
+    }
+    else
+      {
+        checkLocation();
+      }
     rootBundle.loadString('assets/map_style.txt').then((string) {
       _mapStyle = string;
     });
+  }
+
+  Future<Null> displayPrediction(Prediction p, ScaffoldState scaffold) async {
+    if (p != null) {
+      print('trigr');
+      final query = p.description;
+      var addresses = await Geocoder.local.findAddressesFromQuery(query);
+      var first = addresses.first;
+      print("${first.featureName} :");
+      print("hjo" + first.coordinates.toString());
+      List<String> latLongList = first.coordinates.toString().split(",");
+      String latt = latLongList[0].substring(1, latLongList[0].length);
+      String long = latLongList[1].substring(0, latLongList[1].length - 1);
+      print(latt);
+      print(long);
+      saveLocation(locType, latt, long, first.featureName);
+    }
+  }
+
+  Future<void> getCurrentLocation() async {
+    Position position = await Geolocator()
+        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    setState(() {
+      currentLocation = LatLng(position.latitude, position.longitude);
+      markers.clear();
+      circles.clear();
+
+      circles.addAll([
+        Circle(
+            circleId: CircleId(circleIdMain3),
+            center: currentLocation,
+            radius: 1000,
+            fillColor: MyColor.themeColor.withOpacity(0.3),
+            strokeColor: MyColor.themeColor,
+            strokeWidth: 1),
+        Circle(
+            circleId: CircleId(circleIdMain),
+            center: currentLocation,
+            radius: 4000,
+            fillColor: MyColor.themeColor.withOpacity(0.2),
+            strokeColor: MyColor.themeColor,
+            strokeWidth: 1),
+        Circle(
+            circleId: CircleId(circleIdMain2),
+            center: currentLocation,
+            radius: 200,
+            fillColor: MyColor.themeColor,
+            strokeColor: MyColor.themeColor,
+            strokeWidth: 1),
+      ]);
+
+      markers.addAll([
+        Marker(
+            markerId: MarkerId('value'),
+            position: currentLocation,
+            icon: currentLocationIcon),
+      ]);
+
+    });
+  }
+
+  void onError(PlacesAutocompleteResponse response) {
+    homeScaffoldKey.currentState.showSnackBar(
+      SnackBar(content: Text(response.errorMessage)),
+    );
+  }
+
+  Future<Map<String, dynamic>> fetchAccessToken() async {
+    print('Api Called');
+    final Map<String, dynamic> collectedAuthData = {
+      'api_token':
+          'rJ3m7AiOWSJe9RqfwEmwf4HF26sbNVQz0Tdp5FY9WmfjsRgDWjnYEsVZCLgn',
+    };
+    showAlertDialog(context,'Verifying User...');
+    bool hasError = true;
+    bool status = false;
+    String message = '';
+
+    try {
+      http.Response response;
+      response = await http.post(
+          'http://projects.thesparxitsolutions.com/SIS835/api/user/get-access-token',
+          body: json.encode(collectedAuthData),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          });
+      Map<String, dynamic> fetchTokenResponse = json.decode(response.body);
+      print(fetchTokenResponse);
+      Navigator.pop(context);
+      // Check for routes errors
+      if (fetchTokenResponse['status'] == 'error') {
+        message = fetchTokenResponse['message'];
+        hasError = true;
+      } else {
+        status = fetchTokenResponse['status'];
+        token = fetchTokenResponse['access_token'];
+        setAccessToken(token);
+        checkLocation();
+      }
+    } catch (errorMessage) {
+      hasError = true;
+      message = errorMessage.toString();
+    }
+  }
+
+  Future<Map<String, dynamic>> checkLocation() async {
+   showAlertDialog(context,'Fetching Addresses...');
+    String message = '';
+    print(token + 'rgh');
+    try {
+      http.Response response;
+      response = await http.get(
+          'http://projects.thesparxitsolutions.com/SIS835/api/user/location',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Authorization': 'Bearer ' + token
+          });
+      Map<String, dynamic> fetchTokenResponse = json.decode(response.body);
+      print(fetchTokenResponse);
+      Navigator.pop(context);
+      // Check for routes errors
+      if (fetchTokenResponse['status'] == 'error') {
+        message = fetchTokenResponse['message'];
+      } else {
+        message = fetchTokenResponse['message'];
+        List<dynamic> homeList=fetchTokenResponse['home'];
+        List<dynamic> workList=fetchTokenResponse['work'];
+        if(homeList.length==0)
+          {
+            print('Home array is null');
+          }
+        else
+          {
+            print('Home array has data');
+            print(homeList.toString());
+
+            setState(() {
+
+              homeLocatioName=homeList[0]['address'];
+
+            });
+
+
+          }
+
+  if(workList.length==0)
+    {
+      print('Work array is null');
+    }
+  else
+    {
+      print('Work arra is nit null');
+      setState(() {
+        workLocatioName=workList[0]['address'];
+      });
+
+
+    }
+        print(message);
+
+      }
+    } catch (errorMessage) {
+      message = errorMessage.toString();
+    }
+  }
+
+
+
+
+
+
+
+  Future<Map<String, dynamic>> saveLocation(
+      String type, String latt, String longg, String address) async {
+    final Map<String, dynamic> collectedAuthData = {
+      'type': type,
+      'latitude': latt,
+      'longitude': longg,
+      'address': address
+    };
+    print(collectedAuthData.toString() + 'maphasg');
+    /* progressDialog = ProgressDialog(context);
+    await progressDialog.show();*/
+    showAlertDialog(context,'Saving Address...');
+    bool status = false;
+    String apiToken = '';
+    String message = '';
+    print(token + 'rgh');
+    try {
+      http.Response response;
+      response = await http.post(
+          'http://projects.thesparxitsolutions.com/SIS835/api/user/location',
+          body: json.encode(collectedAuthData),
+          headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Authorization': 'Bearer ' + token
+          });
+      Map<String, dynamic> fetchTokenResponse = json.decode(response.body);
+      print(fetchTokenResponse);
+      Navigator.pop(context);
+      checkLocation();
+      // Check for routes errors
+      if (fetchTokenResponse['status'] == 'error') {
+        message = fetchTokenResponse['message'];
+      } else {
+        status = fetchTokenResponse['status'];
+        message = fetchTokenResponse['message'];
+        print(message);
+        Toast.show(message, context, duration: Toast.LENGTH_SHORT, gravity:  Toast.BOTTOM,backgroundColor: MyColor.gradientStart,);
+      }
+    } catch (errorMessage) {
+      message = errorMessage.toString();
+    }
+  }
+
+  showAlertDialog(BuildContext context,String dialogText) {
+    AlertDialog alert = AlertDialog(
+      content: new Row(
+        children: [
+          CircularProgressIndicator(backgroundColor: MyColor.gradientStart,),
+          Container(margin: EdgeInsets.only(left: 15), child: Text(dialogText)),
+        ],
+      ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  Future<bool> setAccessToken(String value) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.setString('access_token', value);
+  }
+
+
+  Future<void> openPlacePicker(String type)
+  async {
+    locType=type;
+    Prediction p =
+        await PlacesAutocomplete.show(
+      context: context,
+      apiKey: kGoogleApiKey,
+      onError: onError,
+      mode: _mode,
+    );
+    displayPrediction(p,
+        homeScaffoldKey.currentState);
   }
 }
