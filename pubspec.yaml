@@ -96,6 +96,7 @@ flutter:
     - images/map_oval.png
     - images/car_icon_map.png
     - images/marker.png
+    - images/loc_blue.png
   fonts:
     - family: GilroyBold
       fonts:

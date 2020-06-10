@@ -62,7 +62,6 @@ class StartTripDialogState extends State<DriverRatingDialog>
                                           transform: Matrix4.translationValues(
                                               0.0, -30.0, 0.0),
                                           decoration: new BoxDecoration(
-                                              color: Colors.yellow,
                                               shape: BoxShape.circle,
                                               image: new DecorationImage(
                                                   fit: BoxFit.fill,

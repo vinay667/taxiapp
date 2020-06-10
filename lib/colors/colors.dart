@@ -41,6 +41,7 @@ class MyColor {
   static const blueText = Color(0xFF094bc3);
   static const greyCircle = Color(0xFFDcE0E5);
   static const green = Color(0xFF1fdf7e);
+  static const searchBoxColor = Color(0xFFE8E8E8);
   static const greyContainer = Color(0xFFf4f5f6);
   static const tripDateColor = Color.fromRGBO(0, 0, 0, .4);
   static const tripPaidTextColor = Color.fromRGBO(0, 0, 0, .5);

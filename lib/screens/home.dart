@@ -13,16 +13,16 @@ import 'package:taxiapp/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_google_places/flutter_google_places.dart';
-import 'package:taxiapp/screens/destination_screen.dart';
+import 'package:taxiapp/screens/custom_picker.dart';
+import 'package:taxiapp/screens/payment_screen.dart';
 import 'package:taxiapp/screens/profile_screen.dart';
 import 'package:taxiapp/screens/select_cab_screen.dart';
 import 'package:taxiapp/screens/settings_screen.dart';
 import 'package:taxiapp/screens/your_trip.dart';
 import 'package:toast/toast.dart';
+import 'destination_screen.dart';
 import 'help_screen.dart';
 import 'invite_screen.dart';
-import 'location_screen.dart';
-
 const kGoogleApiKey = "AIzaSyB_TCC5pNO5HdmwqdCY5Gfeu27549LP0mc";
 GoogleMapsPlaces _places = new GoogleMapsPlaces(apiKey: kGoogleApiKey);
 
@@ -36,6 +36,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String token;
+  List<dynamic> savedAddresses=[];
   String locType='';
   Completer<GoogleMapController> controller1;
 
@@ -47,7 +48,6 @@ String workLocatioName='My Work';
   ProgressDialog progressDialog;
   Mode _mode = Mode.fullscreen;
   final homeScaffoldKey = new GlobalKey<ScaffoldState>();
-
   static LatLng currentLocation;
   BitmapDescriptor pinLocationIcon,currentLocationIcon;
   GoogleMapController mapController;
@@ -238,7 +238,7 @@ String workLocatioName='My Work';
                   Navigator.push(
                       context,
                       CupertinoPageRoute(
-                          builder: (context) => LocationScreen()));
+                          builder: (context) => PaymentScreen()));
                 },
               ),
               ListTile(
@@ -381,7 +381,7 @@ String workLocatioName='My Work';
                     children: <Widget>[
                         currentLocation==null?Container(
                           width:double.infinity,
-                          child: Center(child: Text('Loading map...',style: TextStyle(decoration: TextDecoration.none,color: MyColor.gradientEnd),),),):
+                          child: Center(child: Text('Loading map...',style: TextStyle(fontSize:15,decoration: TextDecoration.none,color: MyColor.gradientEnd),),),):
                       Container(
                         height: double.infinity,
                         child: GoogleMap(
@@ -429,13 +429,15 @@ String workLocatioName='My Work';
                                             borderRadius:
                                                 BorderRadius.circular(20)),
                                         child: InkWell(
-                                          onTap: () {
+                                          onTap: () async {
+                                            //fetchAccessToken();
+                                           // checkLocation();
 
-                                            Navigator.push(
-                                                context,
-                                                CupertinoPageRoute(
-                                                    builder: (context) =>
-                                                        DestinationScreen(token)));
+                                            final result=await Navigator.push(context, CupertinoPageRoute(builder: (context)=>DestinationScreen(token)));
+                                            if(result!=null)
+                                            {
+                                              checkLocation();
+                                            }
                                           },
                                           child: Container(
                                             width: 130.3,
@@ -516,14 +518,18 @@ String workLocatioName='My Work';
                                             borderRadius:
                                                 BorderRadius.circular(20)),
                                         child: InkWell(
-                                            onTap: (){
+                                            onTap: () async {
                                               if(homeLocatioName!='My Home')
                                                 {
                                                   Navigator.push(context,CupertinoPageRoute(builder:(context)=>SelectCabScreen(token)));
                                                 }
                                               else
                                                 {
-                                                  openPlacePicker('home');
+                                                  final result=await Navigator.push(context, CupertinoPageRoute(builder: (context)=>CustomPicker(token,'home')));
+                                                  if(result!=null)
+                                                  {
+                                                    checkLocation();
+                                                  }
                                                 }
 
                                             },
@@ -563,9 +569,12 @@ String workLocatioName='My Work';
                                                       ))),
                                                   Padding(
                                                       padding: EdgeInsets.only(
-                                                          top: 15),
+                                                          top: 15,left: 5,right: 5),
                                                       child: Text(
                                                         homeLocatioName,
+                                                        textAlign: TextAlign.center,
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
                                                         style: TextStyle(
                                                             fontSize: 15,
                                                             color: MyColor
@@ -573,18 +582,7 @@ String workLocatioName='My Work';
                                                             fontFamily:
                                                                 'GilroySemibold'),
                                                       )),
-                                                  Padding(
-                                                      padding: EdgeInsets.only(
-                                                          top: 5),
-                                                      child: Text(
-                                                        '55 minutes',
-                                                        style: TextStyle(
-                                                            fontSize: 12,
-                                                            color: MyColor
-                                                                .textSoft,
-                                                            fontFamily:
-                                                                'GilroySemibold'),
-                                                      ))
+
                                                 ],
                                               ),
                                             )),
@@ -593,14 +591,19 @@ String workLocatioName='My Work';
                                     Padding(
                                       padding: EdgeInsets.only(left: 5),
                                       child: InkWell(
-                                        onTap: (){
+                                        onTap: () async {
                                           if(workLocatioName!='My Work')
                                             {
                                               Navigator.push(context, CupertinoPageRoute(builder: (context)=>SelectCabScreen(token)));
                                             }
                                           else
                                             {
-                                              openPlacePicker('work');
+                                             final result=await Navigator.push(context, CupertinoPageRoute(builder: (context)=>CustomPicker(token,'work')));
+                                             if(result!=null)
+                                               {
+                                                 checkLocation();
+                                               }
+                                             // openPlacePicker('work');
                                             }
                                         },
                                         child: Card(
@@ -641,9 +644,12 @@ String workLocatioName='My Work';
                                                         ))),
                                                 Padding(
                                                     padding:
-                                                    EdgeInsets.only(top: 15),
+                                                    EdgeInsets.only(top: 15,left: 5,right: 5),
                                                     child: Text(
                                                       workLocatioName,
+                                                      textAlign: TextAlign.center,
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
                                                       style: TextStyle(
                                                           fontSize: 15,
                                                           color: MyColor
@@ -651,17 +657,6 @@ String workLocatioName='My Work';
                                                           fontFamily:
                                                           'GilroySemibold'),
                                                     )),
-                                                Padding(
-                                                    padding:
-                                                    EdgeInsets.only(top: 5),
-                                                    child: Text(
-                                                      '50 minutes',
-                                                      style: TextStyle(
-                                                          fontSize: 12,
-                                                          color: MyColor.textSoft,
-                                                          fontFamily:
-                                                          'GilroySemibold'),
-                                                    ))
                                               ],
                                             ),
                                           ),
@@ -669,7 +664,95 @@ String workLocatioName='My Work';
 
 
                                       )
+                                    ),
+
+                                    ListView.builder(
+                                      itemCount: savedAddresses.length,
+                                        scrollDirection: Axis.horizontal,
+                                        shrinkWrap: true,
+                                        physics: NeverScrollableScrollPhysics(),
+                                        itemBuilder:(BuildContext context,int position)
+                                            {
+                                              return Padding(
+                                                padding: EdgeInsets.only(left: 5),
+                                                child: Card(
+                                                  elevation: 10,
+                                                  shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                      BorderRadius.circular(20)),
+                                                  child: InkWell(
+                                                      onTap: (){
+
+                                                        Navigator.push(
+                                                            context,
+                                                            CupertinoPageRoute(
+                                                                builder: (context) => SelectCabScreen(token)));
+
+
+
+                                                      },
+                                                      child: Container(
+                                                        width: 130.3,
+                                                        height: 124.3,
+                                                        child: Column(
+                                                          children: <Widget>[
+                                                            Padding(
+                                                              padding: EdgeInsets.only(
+                                                                  top: 20),
+                                                            ),
+                                                            Container(
+                                                                width: 47,
+                                                                height: 47,
+                                                                decoration:
+                                                                new BoxDecoration(
+                                                                  color: Colors.white,
+                                                                  shape: BoxShape.circle,
+                                                                  boxShadow: [
+                                                                    BoxShadow(
+                                                                        color: Colors
+                                                                            .black26,
+                                                                        blurRadius: 8.0,
+                                                                        offset: Offset(
+                                                                            1.0, 1.0),
+                                                                        spreadRadius: 0.0)
+                                                                  ],
+                                                                ),
+                                                                child: Center(
+                                                                    child: Image.asset(
+                                                                      'images/loc_blue.png',
+                                                                      height: 19.3,
+                                                                      width: 18.3,
+                                                                    ))),
+                                                            Padding(
+                                                                padding: EdgeInsets.only(
+                                                                    top: 15,left: 5,right: 5),
+                                                                child: Text(
+                                                                  savedAddresses[position]['address'],
+                                                                  textAlign: TextAlign.center,
+                                                                  maxLines: 2,
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                  style: TextStyle(
+                                                                      fontSize: 15,
+                                                                      color: MyColor
+                                                                          .greyTextColor,
+                                                                      fontFamily:
+                                                                      'GilroySemibold'),
+                                                                )),
+
+                                                          ],
+                                                        ),
+                                                      )),
+                                                ),
+                                              );
+
+                                            }
+
+
+
+
                                     )
+
+
                                   ],
                                 )),
                           ],
@@ -691,7 +774,6 @@ String workLocatioName='My Work';
           var begin = Offset(0.0, 1.0);
           var end = Offset.zero;
           var curve = Curves.ease;
-
           var tween = Tween(begin: begin, end: end);
           var curvedAnimation = CurvedAnimation(
             parent: animation,
@@ -718,7 +800,6 @@ String workLocatioName='My Work';
             parent: animation,
             curve: curve,
           );
-
           return SlideTransition(
             position: tween.animate(curvedAnimation),
             child: child,
@@ -743,6 +824,7 @@ String workLocatioName='My Work';
     );
   }
 
+
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
     mapController.setMapStyle(_mapStyle);
@@ -752,25 +834,6 @@ String workLocatioName='My Work';
 
 
     });
-
-
-
-/*    setState(() {
-      markers.addAll([
-        Marker(
-            markerId: MarkerId('value'),
-            position: LatLng(45.521563, -122.677433),
-            icon: pinLocationIcon),
-        Marker(
-            markerId: MarkerId('value2'),
-            position: LatLng(45.5101, -122.7158),
-            icon: pinLocationIcon),
-        Marker(
-            markerId: MarkerId('value3'),
-            position: LatLng(45.5191, -122.5791),
-            icon: pinLocationIcon),
-      ]);
-    });*/
   }
 
   @override
@@ -890,8 +953,10 @@ String workLocatioName='My Work';
         checkLocation();
       }
     } catch (errorMessage) {
+      Navigator.pop(context);
       hasError = true;
       message = errorMessage.toString();
+      print(message);
     }
   }
 
@@ -919,6 +984,12 @@ String workLocatioName='My Work';
         message = fetchTokenResponse['message'];
         List<dynamic> homeList=fetchTokenResponse['home'];
         List<dynamic> workList=fetchTokenResponse['work'];
+
+        setState(() {
+          savedAddresses=fetchTokenResponse['others'];
+        });
+
+
         if(homeList.length==0)
           {
             print('Home array is null');
@@ -954,16 +1025,10 @@ String workLocatioName='My Work';
 
       }
     } catch (errorMessage) {
+      Navigator.pop(context);
       message = errorMessage.toString();
     }
   }
-
-
-
-
-
-
-
   Future<Map<String, dynamic>> saveLocation(
       String type, String latt, String longg, String address) async {
     final Map<String, dynamic> collectedAuthData = {
@@ -1006,6 +1071,7 @@ String workLocatioName='My Work';
       }
     } catch (errorMessage) {
       message = errorMessage.toString();
+      Navigator.pop(context);
     }
   }
 
